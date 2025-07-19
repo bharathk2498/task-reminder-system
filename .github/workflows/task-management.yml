@@ -1,0 +1,36 @@
+name: Task Management
+
+on:
+  issues:
+    types: [opened, edited, closed, reopened]
+  schedule:
+    - cron: '0 0 * * *'  # Run daily at midnight UTC
+  workflow_dispatch:
+
+jobs:
+  manage-tasks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Process Tasks
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          # Get all open issues labeled as 'task'
+          ISSUES=$(gh issue list --label task --state open --json number,title,body,createdAt,labels)
+          
+          # Process each issue
+          echo "$ISSUES" | jq -c '.[]' | while read -r issue; do
+            NUMBER=$(echo "$issue" | jq -r '.number')
+            DEADLINE=$(echo "$issue" | jq -r '.body' | grep -oP 'Deadline:\s*\K[\d-]+')
+            
+            if [[ ! -z "$DEADLINE" ]]; then
+              TODAY=$(date +%Y-%m-%d)
+              if [[ "$DEADLINE" < "$TODAY" ]]; then
+                # Add overdue label if deadline passed
+                gh issue edit $NUMBER --add-label "overdue"
+              fi
+            fi
+          done
