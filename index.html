@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Reminder System</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f6f8fa;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+        }
+        .task-list {
+            margin-top: 20px;
+        }
+        .task {
+            border: 1px solid #e1e4e8;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 6px;
+        }
+        .high { border-left: 4px solid #d73a4a; }
+        .medium { border-left: 4px solid #ffb366; }
+        .low { border-left: 4px solid #2ea44f; }
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .buttons {
+            margin-top: 20px;
+        }
+        button {
+            background: #2ea44f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #2c974b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Task Reminder System</h1>
+        <div class="buttons">
+            <button onclick="window.location.href='https://github.com/bharathk2498/task-reminder-system/issues/new?template=task.yml'">
+                Create New Task
+            </button>
+        </div>
+        <div id="taskList" class="task-list">
+            Loading tasks...
+        </div>
+    </div>
+
+    <script>
+        // Your repository details
+        const REPO_OWNER = 'bharathk2498';
+        const REPO_NAME = 'task-reminder-system';
+
+        async function fetchTasks() {
+            try {
+                const response = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/issues?labels=task`);
+                const tasks = await response.json();
+                
+                const taskList = document.getElementById('taskList');
+                taskList.innerHTML = tasks.map(task => `
+                    <div class="task ${getPriorityClass(task.labels)}">
+                        <div class="task-header">
+                            <h3>${task.title}</h3>
+                            <span>${getDeadline(task.body)}</span>
+                        </div>
+                        <p>${task.body}</p>
+                        <a href="${task.html_url}" target="_blank">View on GitHub</a>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error fetching tasks:', error);
+            }
+        }
+
+        function getPriorityClass(labels) {
+            const priority = labels.find(label => ['High', 'Medium', 'Low'].includes(label.name));
+            return priority ? priority.name.toLowerCase() : '';
+        }
+
+        function getDeadline(body) {
+            const match = body.match(/Deadline:\s*([\d-]+)/);
+            return match ? `Due: ${match[1]}` : 'No deadline';
+        }
+
+        // Fetch tasks when page loads
+        fetchTasks();
+        // Refresh tasks every 5 minutes
+        setInterval(fetchTasks, 300000);
+    </script>
+</body>
+</html>
